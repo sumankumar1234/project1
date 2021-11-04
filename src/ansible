@@ -1,0 +1,43 @@
+---
+- name: Azure VM - Linux
+  hosts: ansiblevm
+  become: true
+
+  tasks:
+    - name: apt update
+      apt:
+        update_cache: yes
+
+    - name: Pre-requisites for docker repo. install
+      apt:
+	pkg:
+        - apt-transport-https
+	-ca-certificates
+	-curl
+	-gnupg2
+	-software-properties-common
+
+    - name: apt update
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+	state: present
+
+    - name: add docker apt repo
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ {{ ansible_distribution|lower }} {{ ansible_distribution_release }} stable"
+	state: present
+	update_cache: yes
+
+    - name: docker dependencies
+      apt:
+	pkg:
+         - docker-ce
+	 - docker-ce-cli
+	 - containerd.io
+	state: present
+
+    - name: start docker service &
+      service:
+	name: docker
+	state: started
+	enabled: yes
