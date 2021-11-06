@@ -1,0 +1,41 @@
+---
+- name: docker init
+  hosts: localhost
+  become: true
+  tasks:
+   - name: install aptitude
+     apt:
+      sudo usermod -aG docker $USER
+      sudo chmod 666 /var/run/docker.sock
+      sudo usermod -G root $USER
+      sudo chown vmadmin:root .docker
+     state: present
+     force_apt_get: yes
+
+   - name: Install required system packages
+     apt:
+      apt-transport-https
+      ca-certificates
+      curl
+      software-properties-common
+      python3-pip
+      virtualenv
+      python3-setuptools
+     state: present
+     update_cache: yes
+
+   - name: Add Docker GPG apt Key
+     apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      state: present
+   - name: Add Docker Repository
+     apt_repository:
+      repo: deb https://download.docker.com/linux/ubuntu bionic stable
+      state: present
+   - name: Update apt and install docker-ce
+     apt: update_cache=yes name=docker-ce state=latest
+   - name: Install Docker Module for Python
+     pip:
+      name: docker
+   - name: Pull default Docker image
+     docker_image:
