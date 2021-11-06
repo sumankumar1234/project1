@@ -1,37 +1,39 @@
 ---
-- name: Azure VM - Linux
-  hosts: localhost
+- hosts: localhost
   become: true
+
   tasks:
-    - name: apt update
-      apt:
-        update_cache: yes
-    - name: Pre-requisites for docker repo. install
-      apt:
-        pkg:
-         - apt-transport-https
-         - ca-certificates
-         - curl
-         - gnupg2
-         - software-properties-common
-    - name: apt update
+    - name: Install aptitude using apt
+      apt: name=aptitude state=latest update_cache=yes force_apt_get=yes
+
+    - name: Install required system packages
+      apt: name=aptitude state=latest update_cache=yes
+      loop: [ 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common', 'python3-pip', 'virtualenv', 'python3-setuptools', 'sudo usermod -aG docker $USER', 'sudo chmod 666 /var/run/docker.sock', 'sudo usermod -G root $USER', 'sudo chown vmadmin:root .docker']
+
+    - name: Add Docker GPG apt Key
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
-    - name: add docker apt repo
+
+    - name: Add Docker Repository
       apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/ {{ ansible_distribution|lower }} {{ ansible_distribution_release }} stable"
+        repo: deb https://download.docker.com/linux/ubuntu xenial stable
         state: present
-        update_cache: yes
-    - name: docker dependencies
-      apt:
-        pkg:
-         - docker-ce
-         - docker-ce-cli
-         - containerd.io
-        state: present
-    - name: start docker service &
-      service:
+
+    - name: Update apt and install docker-ce
+      apt: update_cache=yes name=docker-ce state=latest
+
+    - name: Install Docker Module for Python
+      pip:
         name: docker
-        state: started
-        enabled: yes
+
+    - name: Pull default Docker image
+      docker_image:
+        name: ubuntu:18.04
+        source: pull
+
+    - name: Create default containers
+      docker_container:
+        name: docker_ubuntu
+        image: ubuntu:18.04
+        command: sleep 1d
